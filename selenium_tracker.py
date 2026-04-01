@@ -1,0 +1,91 @@
+import smtplib
+from email.mime.text import MIMEText
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+import time
+
+# ================= CONFIG =================
+URL = "https://shop.royalchallengers.com/ticket"
+
+SENDER_EMAIL = "unanimousinfirmer111@gmail.com"
+RECEIVER_EMAIL = "keerthanmgowda2@gmail.com"
+APP_PASSWORD = "zvqpqfwfdqfmzybe"
+# ==========================================
+
+
+def send_email():
+    subject = "RCB vs CSK Tickets LIVE"
+    body = f"Tickets are live. Open immediately:\n{URL}"
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = RECEIVER_EMAIL
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(SENDER_EMAIL, APP_PASSWORD)
+            server.send_message(msg)
+
+        print("EMAIL SENT")
+
+    except Exception as e:
+        print("EMAIL FAILED:", e)
+
+
+def check_tickets(driver):
+    driver.get(URL)
+    time.sleep(5)
+
+    print("Checking page...")
+
+    buttons = driver.find_elements(By.TAG_NAME, "button")
+    links = driver.find_elements(By.TAG_NAME, "a")
+
+    for btn in buttons:
+        text = btn.text.lower().strip()
+        if text in ["buy now", "book now", "get tickets"]:
+            print("REAL TICKET BUTTON FOUND:", btn.text)
+            return True
+
+    for link in links:
+        text = link.text.lower().strip()
+        if "csk" in text and ("buy" in text or "ticket" in text):
+            print("RCB vs CSK MATCH FOUND:", link.text)
+            return True
+
+    return False
+
+
+def main():
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+
+    # IMPORTANT: system-installed chromedriver
+    service = Service("/usr/bin/chromedriver")
+
+    driver = webdriver.Chrome(service=service, options=options)
+
+    while True:
+        try:
+            found = check_tickets(driver)
+
+            if found:
+                send_email()
+                time.sleep(300)  # avoid spam
+
+            time.sleep(5)
+
+        except Exception as e:
+            print("Error:", e)
+            time.sleep(10)
+
+    driver.quit()
+
+
+if __name__ == "__main__":
+    main()
