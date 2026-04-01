@@ -17,7 +17,7 @@ APP_PASSWORD = "zvqpqfwfdqfmzybe"
 
 def send_email():
     subject = "RCB vs CSK Tickets LIVE"
-    body = f"Tickets are live. Open immediately:\n{URL}"
+    body = f"Tickets are live:\n{URL}"
 
     msg = MIMEText(body)
     msg["Subject"] = subject
@@ -47,13 +47,13 @@ def check_tickets(driver):
     for btn in buttons:
         text = btn.text.lower().strip()
         if text in ["buy now", "book now", "get tickets"]:
-            print("REAL TICKET BUTTON FOUND:", btn.text)
+            print("REAL BUTTON FOUND:", btn.text)
             return True
 
     for link in links:
         text = link.text.lower().strip()
         if "csk" in text and ("buy" in text or "ticket" in text):
-            print("RCB vs CSK MATCH FOUND:", link.text)
+            print("MATCH FOUND:", link.text)
             return True
 
     return False
@@ -65,24 +65,13 @@ def main():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    # IMPORTANT: system-installed chromedriver
     service = Service("/usr/bin/chromedriver")
-
     driver = webdriver.Chrome(service=service, options=options)
 
-    while True:
-        try:
-            found = check_tickets(driver)
+    found = check_tickets(driver)
 
-            if found:
-                send_email()
-                time.sleep(300)  # avoid spam
-
-            time.sleep(5)
-
-        except Exception as e:
-            print("Error:", e)
-            time.sleep(10)
+    if found:
+        send_email()
 
     driver.quit()
 
