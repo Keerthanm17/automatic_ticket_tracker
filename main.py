@@ -5,6 +5,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import time
+import datetime
 
 # ================= CONFIG =================
 URL = "https://shop.royalchallengers.com/ticket"
@@ -24,15 +25,32 @@ def send_email():
     msg["From"] = SENDER_EMAIL
     msg["To"] = RECEIVER_EMAIL
 
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SENDER_EMAIL, APP_PASSWORD)
-            server.send_message(msg)
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(SENDER_EMAIL, APP_PASSWORD)
+        server.send_message(msg)
 
-        print("EMAIL SENT")
+    print("TICKET EMAIL SENT")
 
-    except Exception as e:
-        print("EMAIL FAILED:", e)
+
+def send_no_ticket_email():
+    subject = "No Tickets Update"
+    body = "No tickets found in the last 12 hours."
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = RECEIVER_EMAIL
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(SENDER_EMAIL, APP_PASSWORD)
+        server.send_message(msg)
+
+    print("NO-TICKET EMAIL SENT")
+
+
+def is_heartbeat_run():
+    now = datetime.datetime.utcnow()
+    return now.hour % 12 == 0 and now.minute < 5
 
 
 def check_tickets(driver):
@@ -72,6 +90,8 @@ def main():
 
     if found:
         send_email()
+    elif is_heartbeat_run():
+        send_no_ticket_email()
 
     driver.quit()
 
