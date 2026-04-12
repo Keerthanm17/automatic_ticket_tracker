@@ -17,8 +17,8 @@ APP_PASSWORD = "zvqpqfwfdqfmzybe"
 
 
 def send_email():
-    subject = "RCB vs CSK Tickets LIVE"
-    body = f"Tickets are live:\n{URL}"
+    subject = "RCB Tickets LIVE"
+    body = f"Tickets are LIVE. Book immediately:\n{URL}"
 
     msg = MIMEText(body)
     msg["Subject"] = subject
@@ -59,21 +59,34 @@ def check_tickets(driver):
 
     print("Checking page...")
 
+    page = driver.page_source.lower()
+
+    # STEP 1: Block false states
+    if any(x in page for x in ["coming soon", "not available", "sold out"]):
+        print("Tickets not available yet")
+        return False
+
+    # STEP 2: Look for real booking buttons
     buttons = driver.find_elements(By.TAG_NAME, "button")
     links = driver.find_elements(By.TAG_NAME, "a")
 
+    # Strong signals (ONLY these trigger)
+    trigger_words = ["buy now", "book now", "get tickets"]
+
     for btn in buttons:
         text = btn.text.lower().strip()
-        if text in ["buy now", "book now", "get tickets"]:
-            print("REAL BUTTON FOUND:", btn.text)
+        if text in trigger_words:
+            print("BOOKING BUTTON FOUND:", btn.text)
             return True
 
     for link in links:
         text = link.text.lower().strip()
-        if "csk" in text and ("buy" in text or "ticket" in text):
-            print("MATCH FOUND:", link.text)
-            return True
+        if any(word in text for word in ["buy", "book", "ticket"]):
+            if len(text) < 40:  # avoid long irrelevant links
+                print("BOOKABLE LINK FOUND:", link.text)
+                return True
 
+    print("No booking options yet")
     return False
 
 
